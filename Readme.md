@@ -42,73 +42,60 @@ Opisane niżej rozwiązania poszczególnych problemów zrealizowane są za pomoc
 
 ### ***Pseudokod***
 ```
-Blok główny:
-dopuki proces nie zostanie zatrzymany:
-       Szukaj rywala()
-       Szukaj sekundanta()
-       Walcz()
-       jeśli poległ: 
-              Lecz się()
-              
+SZUKANIE PARTNERA DO WALKI:
+N - liczba procesów
 
-Szukaj rywala():
-       powtarzaj i ← 0 do n:
-              jeśli i to mój identyfikator: pomiń
-              wyślij REQ walki do i
-              dopóki nie otrzymano ACK lub NACK od i:
-                     przetwarzaj przychodzące żądania
-              jeśli otrzymano ACK lub NACK:
-                     zapisz rywala
+Pi:
+	ustaw priorytet = Lamport
+	roześlij {REQ, priorytet}
+	ustaw licznik odp = 0
+	dopóki odp = 0:
+		dopóki dop < N odbieraj AKC(REQ od Pn) lub NAKC:
+			odp++
+			jeśli AKC(REQ): zapisz priorytet Pj w buf[]
 
-Szukaj sekundanta():
-       inicjuj liczbę c = 0 odebranych komunikatów do żądania
-       powtarzaj i ← 0 do n:
-              jeśli i to mój ID: pomiń
-              wyślij REQ walki do i
-       
-       powtarzaj dopuki c < ilość procesów -1:
-              jeśli REQ nie dotyczy mojej sekcji:
-                     jeśli sekcja dotyczy rywala, to NACK
-                     w przeciwnym wypadku, ACK
-              jeśli REQ dotyczy mojej sekcji:
-                     jeśli odebrany Lamport > wysłany Lamport, to ACK
-                     jeśli odebrany Lamport == wysłany Lamport i SourceID > mój ID, to ACK
-                     w p.p., zapisz proces w buforze Sekundantów
-       jeśli ilość sekundantów >  ilość odmówień, przydziel zasób
-       w przeciwnym przypadku ponów żądanie 
+		sortuj buf min => max
+		paruj buf[1]:buf[2] itd.
+		jeśli Pi nie ma pary odp = 0
 
-Walcz():
-       l = losuj liczbę od 1 do 1000
-       wyślij liczbę rywalowi
-       odbierz liczbę = w od rywala
-       jeśli l > w, wygrana
-       w przeciwnym razie przegrana
-       Wyślij ACK do procesów w buforze sekundantów
 
-Lecz się():
-       inicjuj liczbę c = 0 odebranych komunikatów do żądania
-       powtarzaj i ← 0 do n:
-              jeśli i to mój ID: pomiń
-              wyślij REQ walki do i
-       
-       powtarzaj dopóki c < ilość procesów -1:
-              jeśli REQ nie dotyczy mojej sekcji:
-                     jeśli sekcja dotyczy rywala, to NACK
-                     w przeciwnym wypadku, ACK
-              jeśli REQ dotyczy mojej sekcji:
-                     jeśli odebrany Lamport > wysłany Lamport, to ACK
-                     jeśli odebrany Lamport == wysłany Lamport i SourceID > mój ID, to ACK
-                     w p.p., zapisz proces w buforze SalSzpitalnych
-       jeśli ilość SalSzpitalnych >  ilość odmówień, przydziel zasób
-       w przeciwnym przypadku ponów żądanie 
-       losuj czas leczenia cz = random(1 do 3) sekund
-       czekaj cz
-       Wyślij ACK do procesów w buforze SalSzpitalnych
+Pj:
+	ustaw priorytet = Lamporta
+	jeśli równeż szuka: (rozesłano już REQ, zachowanie jak dla Pi)
+	jeśli nie szuka {NACK, priorytet}
+		zapisz w buf[] {Pi, priorytet}
 
+
+
+Pytanie o zasób Sekundant/Szpital:
+N - liczna procesów
+S - ograniczenie zasobu
+Pi:
+	ustaw priorytet = Lamport
+	ustaw akc = 0
+	roześlij {REQ, priorytet}
+	dopóki akc-N >= S
+		jeśli odebrano AKC: akc++
+
+Pj:
+	jeśli nie ubiega się o zasób: AKC
+	jeśli ubiega się o zasób:
+		ustaw priorytet = Lamport
+		jeśli priorytet < Pi[priotytet]: wyślij AKC
+		jeśli priorytet > Pi[priotytet]: 
+			dodaj do buf_czekujacych[] = Pj
+
+
+
+Zwalnianie zasobu
+Pi:
+	jeśli zwolniono zasób:
+		wyślij do procesów z buf_czekujacych[]: AKC
 ```
 <br><br>
 
 ### ***Wygląd komunikatów***
+//TODO: porawa wyglądu komunikatów
 Przesyłana wiadomość zawsze składa sie z trzech elementów:
 * msg[0] - zegar lamporta
 * msg[1] - czynność
@@ -126,8 +113,9 @@ Przesyłana wiadomość zawsze składa sie z trzech elementów:
 ## ***Rozwiązanie dostępu do sekcji krytycznych***
 
 ### ***Rozwiązanie problemu parowania***
-Wyznaczenie pary zawodników odbywa się przez komunikację REQ i ACK/NACK. Proces ubiegający się o przeciwnika wysyła wiadomość REQ z informacją o chęci walki. Przeciwnik podejmuje decyzję, czy jest zainteresowany walką, czy też nie i wysyła odpowiedni komunikat (odpowiednio ACK lub NACK). 
-Złożoność komunikacyjna wynosi 2n, a czasowa 2.
+Proces ubiegający się o rywala tylko raz rozsyła żądanie {REQ, priorytetem} do pozostałych procesów, jeśli okaże się, że odebrał odpowiedzi od wszystkich i nie zakwalifikował się do pary, wówczas zeruje licznik odpowiedzi i nadal nasłuchuje, bo wie, że w kolejnej kolejce przeszukiwania dostanie żądanie (REQ) od innych procesów, a pozostałe procesu mają zapamiętaną informację o tym, że Pi oczekuje / nie zakwalifikował się poprzednio - dodatkowo będzie on na szczycie listy i tym razem na pewno otrzyma parę (dlatego lista min -> max).
+
+Jednocześnie proces Pj, który otrzymał już REQ od Pi i też szuka partnera rozesłał już swoje REQ (umowne ACK, bo nie musi dodatkowo wysyłać ACK), jedynie w przypadku braku zainteresowania zostanie przesłany NACK.
 <br><br>
 
 ### ***Rozwiązanie problemu Sekundantów i sal szpitalnych***
@@ -141,6 +129,6 @@ Proces ubiegający się o dostęp do sekcji krytycznej rozsyła do pozostałych 
  <br><br>
 
 ### ***Rozwiązanie pojedynków***
-Z uwagi na charakter działania, zdecydowano się do wyłaniania zwycięzcy losowo, a nie na podstawie priorytetu. Każdy z zawodników losuje liczbę i przesyła ją do rywala. Wygrywa ten, który wylosował większą z nich.
+Z uwagi na charakter działania, zdecydowano się do wyłaniania zwycięzcy losowo, a nie na podstawie priorytetu. Każdy z zawodników losuje liczbę i przesyła ją do rywala. Wygrywa ten, który wylosował większą z nich - remisy rozstrzyga identyfikator procesu (starszy doświadczony strzelec wie lepiej jak oparzeć ranę).
 Złożoność komunikacyjna i czasowa wynoszą 1.
  <br><br><br>
