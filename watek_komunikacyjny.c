@@ -6,37 +6,53 @@ void *startKomWatek(void *ptr)
 {
     MPI_Status status;
     int is_message = FALSE;
-    packet_t pakiet;
-    /* Obrazuje pętlę odbierającą pakiety o różnych typach */
+    packet_t pakiet, odp;
     while (1) {
         MPI_Recv( &pakiet, 1, MPI_PAKIET_T, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         
-        switch ( pakiet.data ) {
-            case RIVAL:
-                
-                break;
-            case SEKUNDANT: 
-            case HEAL:
-                if (stan == InHealMonitor || stan == InSecundantMonitor)
-                {
-                
-                }
-                break;
-            case FIGHT:
-                
-                break;
-            
-        }
         switch ( status.MPI_TAG ) {
             case REQ:
+                    odp.data = pakiet.data;
+                    if (stan == InMonitor)
+                    {
+                        switch ( pakiet.data ) {
+                            case Rival:
+                                //TODO: RYWAL!!!
+                                break;
+                            case Sekundant: 
+                            case Heal:
+                                if(stan_od == pakiet.data)
+                                {
+                                    if(priorytet > pakiet.ts || (priorytet == pakiet.ts && pakiet.src < rank))
+                                    {
+                                        increaseAggrementSum(1);
+                                        setBufer(pakiet.src, TRUE);
+                                        break;
+                                    }
+                                }
+                                sendPacket(&odp, pakiet.src, ACK);
+                                break;
+                            case Fight:
+                                increaseAggrementSum(pakiet.value);
+                                break;
+                        }
+                    }
+                    else if (pakiet.data == Rival)
+                    {
+                        sendPacket(&odp, pakiet.src, NACK);
+                    }
+                    else
+                    //Jeśli nie monitoruję to wysyłam ACK
+                    {
+                        sendPacket(&odp, pakiet.src, ACK);
+                    }
                 break;
             case ACK:
-                break;
             case FREE:
+                increaseAggrementSum(1);
                 break;
             case NACK:
                 break;
-        }
-        
+        }        
     }
 }
