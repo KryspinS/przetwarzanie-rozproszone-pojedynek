@@ -136,7 +136,7 @@ void chooseRival()
         {
             if (counter%2 != 0)
             {
-                if (i != size)
+                if (i != size-1)
                 {
                     rival = rivalsList[i+1].id;
                 }
@@ -152,6 +152,10 @@ void chooseRival()
             {
                 rival = rivalsList[i-1].id;
             }
+        }
+        if (i == size-1 && counter%2 != 0)
+        {
+            setRivals(rivalsList[i].id, rivalsList[i].value, ACK);
         }
     }
 }

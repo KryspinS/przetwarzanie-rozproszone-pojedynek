@@ -41,7 +41,7 @@ void SearchForRival()
         if (aggrementSum == size)
         {
             changeState(InFree);
-            sortAndChooseRival(); // sorted min->max
+            sortAndChooseRival();
         }
         sleep(SEC_IN_STATE);
     }

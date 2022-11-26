@@ -24,7 +24,7 @@ void finalizuj()
     println("czekam na wątek \"komunikacyjny\"\n" );
     pthread_join(threadKom,NULL);
     free(bufer);
-    free(rivals);
+    free(rivalsList);
     MPI_Type_free(&MPI_PAKIET_T);
     MPI_Finalize();
 }

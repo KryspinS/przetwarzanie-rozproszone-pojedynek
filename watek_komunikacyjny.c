@@ -19,7 +19,7 @@ void *startKomWatek(void *ptr)
                         switch ( pakiet.data ) {
                             case Rival:
                                 increaseAggrementSum(1);
-                                setRivals(pakiet.src, pakiet.value, ACK);
+                                setRivals(pakiet.src, pakiet.ts, ACK);
                                 break;
                             case Sekundant: 
                             case Heal:
@@ -55,7 +55,7 @@ void *startKomWatek(void *ptr)
                 increaseAggrementSum(1);
                 if(pakiet.data = Rival)
                 {
-                    setRivals(pakiet.src, pakiet.value, status.MPI_TAG);
+                    setRivals(pakiet.src, pakiet.ts, status.MPI_TAG);
                 }
                 break;
         }        
