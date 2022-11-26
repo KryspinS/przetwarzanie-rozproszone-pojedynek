@@ -22,8 +22,31 @@ void SearchForRival()
 {
     changeStateFor(Rival);
     packet_t *pkt = malloc(sizeof(packet_t));
+    setPriority();
+    pkt->ts = priorytet;
+    pkt->data = Rival;
+    increaseAggrementSum(0);
+    setBufer(rank, priorytet);
 
-    // TODO lista min max i wybór rywala
+    changeState(InSend);
+    for (int i = 0; i < size; i++)
+    {
+        if(i == rank) continue;
+        sendPacket(pkt, i, REQ);
+    }
+    changeState(InMonitor);
+
+    while (stan != InFree)
+    {
+        if (aggrementSum == size)
+        {
+            changeState(InFree);
+            sortAndChooseRival(); // sorted min->max
+        }
+        sleep(SEC_IN_STATE);
+    }
+
+    free(pkt);
 }
 
 void SearchForSecundant()
@@ -51,6 +74,7 @@ void SearchForSecundant()
         }
         sleep(SEC_IN_STATE);
     }
+    free(pkt);
 }
 
 void Fight()
@@ -93,6 +117,7 @@ void Fight()
         changeState(ToHeal);
         println("Zostałem pokonany")
     }
+    free(pkt);
 }
 
 void HealMe()
@@ -134,4 +159,5 @@ void HealMe()
             sendPacket(pkt, i, FREE);
         }
     }
+    free(pkt);
 }

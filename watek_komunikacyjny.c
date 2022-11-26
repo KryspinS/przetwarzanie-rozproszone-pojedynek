@@ -9,7 +9,8 @@ void *startKomWatek(void *ptr)
     packet_t pakiet, odp;
     while (1) {
         MPI_Recv( &pakiet, 1, MPI_PAKIET_T, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        
+        increaseLamport(pakiet.ts);
+
         switch ( status.MPI_TAG ) {
             case REQ:
                     odp.data = pakiet.data;
@@ -17,7 +18,8 @@ void *startKomWatek(void *ptr)
                     {
                         switch ( pakiet.data ) {
                             case Rival:
-                                //TODO: RYWAL!!!
+                                increaseAggrementSum(1);
+                                setRivals(pakiet.src, pakiet.value, ACK);
                                 break;
                             case Sekundant: 
                             case Heal:
@@ -47,11 +49,14 @@ void *startKomWatek(void *ptr)
                         sendPacket(&odp, pakiet.src, ACK);
                     }
                 break;
-            case ACK:
             case FREE:
-                increaseAggrementSum(1);
-                break;
+            case ACK:
             case NACK:
+                increaseAggrementSum(1);
+                if(pakiet.data = Rival)
+                {
+                    setRivals(pakiet.src, pakiet.value, status.MPI_TAG);
+                }
                 break;
         }        
     }

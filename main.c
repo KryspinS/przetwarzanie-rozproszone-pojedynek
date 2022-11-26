@@ -5,6 +5,7 @@
 int rank, size, lampClock, priorytet,
     sekundanci, saleSzpitalne,
     aggrementSum, rival, bufer[];
+list_t rivalsList[];
 state_t stan=InRun;
 state_f stan_od=Rival;
 pthread_t threadKom, threadMon;
@@ -14,6 +15,7 @@ pthread_mutex_t lampMut = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t priorityMut = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t aggrementSumMut = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t buferMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t rivalsMut = PTHREAD_MUTEX_INITIALIZER;
 
 void finalizuj()
 {
@@ -22,6 +24,7 @@ void finalizuj()
     println("czekam na wątek \"komunikacyjny\"\n" );
     pthread_join(threadKom,NULL);
     free(bufer);
+    free(rivals);
     MPI_Type_free(&MPI_PAKIET_T);
     MPI_Finalize();
 }
@@ -61,6 +64,7 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     pthread_create( &threadKom, NULL, startKomWatek , 0);
     *bufer = malloc(size * sizeof(int));
+    list_t *rivals = (list_t *)calloc(size, sizeof(list_t));
     scanf("Podaj ilość sekundantów [min 1]: %d", &sekundanci);  
     scanf("Podaj ilość sal szpitalnych [min (n/2)+1]:%d", &saleSzpitalne);  
     

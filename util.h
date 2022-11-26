@@ -4,13 +4,20 @@
 
 /* typ pakietu */
 typedef struct {
-    int ts;       /* timestamp (zegar lamporta */
+    int ts;
     int src;  
     state_f data;
     int value;
 } packet_t;
-/* packet_t ma trzy pola, więc NITEMS=3. Wykorzystane w inicjuj_typ_pakietu */
-#define NITEMS 3
+#define NITEMS 4
+
+typedef struct 
+{
+    int id;
+    int value;
+    int msg
+} list_t;
+
 
 /* Typy wiadomości */
 #define REQ 0
@@ -30,4 +37,8 @@ void increaseLamport(int requestedLamportClock) ;
 void setPriority();
 void increaseAggrementSum(int newValue);
 void setBufer(int who, int value);
+void setRivals(int who, int value, int type);
+void swap(list_t *xp, list_t *yp);
+void sortAndChooseRival();
+void chooseRival();
 #endif

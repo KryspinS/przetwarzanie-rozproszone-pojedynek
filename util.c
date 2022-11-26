@@ -22,13 +22,14 @@ const char const *tag2string( int tag )
 */
 void inicjuj_typ_pakietu()
 {
-    int       blocklengths[NITEMS] = {1,1,1};
-    MPI_Datatype typy[NITEMS] = {MPI_INT, MPI_INT, MPI_INT};
+    int       blocklengths[NITEMS] = {1,1,1,1};
+    MPI_Datatype typy[NITEMS] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT};
 
     MPI_Aint     offsets[NITEMS]; 
     offsets[0] = offsetof(packet_t, ts);
     offsets[1] = offsetof(packet_t, src);
     offsets[2] = offsetof(packet_t, data);
+    offsets[3] = offsetof(packet_t, value);
 
     MPI_Type_create_struct(NITEMS, blocklengths, offsets, typy, &MPI_PAKIET_T);
 
@@ -37,12 +38,10 @@ void inicjuj_typ_pakietu()
 
 void sendPacket(packet_t *pkt, int destination, int tag)
 {
-    if (pkt==0) pkt = malloc(sizeof(packet_t));
     pkt->src = rank;
     MPI_Send( pkt, 1, MPI_PAKIET_T, destination, tag, MPI_COMM_WORLD);
     increaseLamport(0);
     debug("Wysyłam %s do %d\n", tag2string( tag), destination);
-    free(pkt);
 }
 
 void changeState( state_t newState )
@@ -89,4 +88,70 @@ void setBufer(int who, int value)
     pthread_mutex_lock( &buferMut );
     bufer[who] = value;
     pthread_mutex_unlock( &buferMut );
+}
+
+void setRivals(int who, int value, int type)
+{
+    pthread_mutex_lock( &rivalsMut );
+    list_t list = {who, value, type};
+    rivalsList[who] = list;
+    pthread_mutex_unlock( &rivalsMut );
+}
+
+void swap(list_t *xp, list_t *yp)
+{
+    list_t temp = *xp;
+    *xp = *yp;
+    *yp = temp;
+}
+ 
+void sortAndChooseRival()
+{
+    pthread_mutex_lock( &rivalsMut );
+    int i, j, min_idx;
+ 
+    for (i = 0; i < size-1; i++)
+    {
+        min_idx = i;
+        for (j = i+1; j < size; j++)
+          if (rivalsList[j].value < rivalsList[min_idx].value)
+            min_idx = j;
+ 
+           if(min_idx != i)
+            swap(&rivalsList[min_idx], &rivalsList[i]);
+    }
+    
+    chooseRival();
+    pthread_mutex_unlock( &rivalsMut );
+}
+
+void chooseRival() 
+{
+    int counter;
+    for (int i=0; i <size;i++)
+    {
+        if(rivalsList[i].msg == NACK) continue;
+        counter++;
+        if (rivalsList[i].id == rank)
+        {
+            if (counter%2 != 0)
+            {
+                if (i != size)
+                {
+                    rival = rivalsList[i+1].id;
+                }
+                else 
+                {
+                    increaseAggrementSum(0);
+                    changeState(InMonitor);
+                    setRivals(rank, rivalsList[i].value, ACK);
+                    break;
+                }
+            }
+            else 
+            {
+                rival = rivalsList[i-1].id;
+            }
+        }
+    }
 }
