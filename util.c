@@ -9,7 +9,26 @@ struct tagNames_t{
     {"request", REQ }, 
     {"akceptacja", ACK}, 
     {"brak akceptacji", NACK}, 
-    {"zwolnienie zasobu", FREE}};
+    {"zwolnienie zasobu", FREE} 
+};
+
+struct stateNames_t{
+    const char *name;
+    state_f state;
+} stateNames[] = {
+    {"leczenia", Heal},
+    {"sekundanta", Sekundant},
+    {"walki", Fight},
+    {"rywala", Rival}   
+};
+
+const char const *state2string( state_f state )
+{
+    for (int i=0; i <sizeof(stateNames)/sizeof(struct stateNames_t);i++) {
+	if ( stateNames[i].state == state )  return stateNames[i].name;
+    }
+    return "<unknown>";
+}
 
 const char const *tag2string( int tag )
 {
@@ -41,7 +60,7 @@ void sendPacket(packet_t *pkt, int destination, int tag)
     pkt->src = rank;
     MPI_Send( pkt, 1, MPI_PAKIET_T, destination, tag, MPI_COMM_WORLD);
     increaseLamport(0);
-    debug("Wysyłam %s do %d\n", tag2string( tag), destination);
+    debug("Wysyłam %s do %d na temat %s\n", tag2string( tag), destination, state2string(pkt->data));
 }
 
 void changeState( state_t newState )

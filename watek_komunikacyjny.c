@@ -7,9 +7,12 @@ void *startKomWatek(void *ptr)
     MPI_Status status;
     int is_message = FALSE;
     packet_t pakiet, odp;
+    odp.src = rank;
+    odp.ts = priorytet;
     while (1) {
         MPI_Recv( &pakiet, 1, MPI_PAKIET_T, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
         increaseLamport(pakiet.ts);
+        debug("Odebrałem %s od %d i dotyczy %s, Lamport: %d, Value: %d\n", tag2string( status.MPI_TAG), pakiet.src, state2string(pakiet.data), pakiet.ts, pakiet.value)
 
         switch ( status.MPI_TAG ) {
             case REQ:

@@ -55,6 +55,9 @@ void check_thread_support(int provided)
 
 int main(int argc, char **argv)
 {
+    sekundanci = atoi(argv[1]);
+    saleSzpitalne = atoi(argv[2]);
+    println("Sekundanci: %d Sale szpitalne: %d", sekundanci,saleSzpitalne);
     MPI_Status status;
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
@@ -63,10 +66,8 @@ int main(int argc, char **argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     pthread_create( &threadKom, NULL, startKomWatek , 0);
-    *bufer = malloc(size * sizeof(int));
-    list_t *rivals = (list_t *)calloc(size, sizeof(list_t));
-    scanf("Podaj ilość sekundantów [min 1]: %d", &sekundanci);  
-    scanf("Podaj ilość sal szpitalnych [min (n/2)+1]:%d", &saleSzpitalne);  
+    int *bufer = (int *) malloc(size * sizeof(int));
+    list_t *rivals = (list_t *) malloc(size * sizeof(list_t));
     
     mainLoop();
     

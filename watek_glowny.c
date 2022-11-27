@@ -10,16 +10,15 @@ void mainLoop()
     {
         SearchForRival();
         SearchForSecundant();
-        Fight();
-        if (stan == ToHeal)
-        {
-            HealMe();
-        }
+        FightWithRival();
+        if (stan == ToHeal) HealYourSelf();
+        else debug("Wygrałem\n");
     }
 }
 
 void SearchForRival()
 {
+    debug("Szukam rywala\n");
     changeStateFor(Rival);
     packet_t *pkt = malloc(sizeof(packet_t));
     setPriority();
@@ -46,11 +45,15 @@ void SearchForRival()
         sleep(SEC_IN_STATE);
     }
 
+    debug("Będę walczył z %d\n", rival);
+
+
     free(pkt);
 }
 
 void SearchForSecundant()
 {
+    debug("Szukam sekundanta\n");
     changeStateFor(Sekundant);
     packet_t *pkt = malloc(sizeof(packet_t));
     setPriority();
@@ -74,11 +77,13 @@ void SearchForSecundant()
         }
         sleep(SEC_IN_STATE);
     }
+    debug("Znalazłem sekundanta\n");
     free(pkt);
 }
 
-void Fight()
+void FightWithRival()
 {
+    debug("Walczę z %d\n", rival);
     changeStateFor(Fight);
     srandom(rank);
     int shot = rand() % 1000 + 1;
@@ -115,13 +120,14 @@ void Fight()
     if (aggrementSum > shot || (aggrementSum == shot && rank < rival))
     {
         changeState(ToHeal);
-        println("Zostałem pokonany")
+        debug("Zostałem pokonany\n")
     }
     free(pkt);
 }
 
-void HealMe()
+void HealYourSelf()
 {
+    debug("Będę się leczył\n")
     changeStateFor(Heal);
     srandom(rank);
     int nurseSpeed = rand() % 3 + 1;
@@ -144,8 +150,10 @@ void HealMe()
         if (saleSzpitalne - (size - 1 - aggrementSum) > 0)
         {
             changeState(InRun);
+            debug("Leczę się\n");
             sleep(nurseSpeed);
             changeState(InFree);
+            debug("wyleczony\n");
         }
         sleep(SEC_IN_STATE);
     }

@@ -5,7 +5,7 @@
 void mainLoop();
 void SearchForRival();
 void SearchForSecundant();
-void Fight();
-void HealMe();
+void FightWithRival();
+void HealYourSelf();
 
 #endif
