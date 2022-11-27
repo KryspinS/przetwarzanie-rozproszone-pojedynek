@@ -2,11 +2,20 @@
 #include "watek_glowny.h"
 #include "watek_komunikacyjny.h"
 
-int rank, size, lampClock, sekundanci, saleSzpitalne, aggrementSum, rival;
+int rank, size, lampClock, priorytet,
+    sekundanci, saleSzpitalne,
+    aggrementSum, rival, bufer[];
+list_t rivalsList[];
 state_t stan=InRun;
+state_f stan_od=Rival;
 pthread_t threadKom, threadMon;
 pthread_mutex_t stateMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t stateForMut = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lampMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t priorityMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t aggrementSumMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t buferMut = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t rivalsMut = PTHREAD_MUTEX_INITIALIZER;
 
 void finalizuj()
 {
@@ -14,6 +23,8 @@ void finalizuj()
     /* Czekamy, aż wątek potomny się zakończy */
     println("czekam na wątek \"komunikacyjny\"\n" );
     pthread_join(threadKom,NULL);
+    free(bufer);
+    free(rivalsList);
     MPI_Type_free(&MPI_PAKIET_T);
     MPI_Finalize();
 }
@@ -42,22 +53,21 @@ void check_thread_support(int provided)
     }
 }
 
-
 int main(int argc, char **argv)
 {
+    sekundanci = atoi(argv[1]);
+    saleSzpitalne = atoi(argv[2]);
+    println("Sekundanci: %d Sale szpitalne: %d", sekundanci,saleSzpitalne);
     MPI_Status status;
     int provided;
     MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
     check_thread_support(provided);
-    srand(rank);
     inicjuj_typ_pakietu(); // tworzy typ pakietu
-    packet_t pkt;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     pthread_create( &threadKom, NULL, startKomWatek , 0);
-
-    scanf("Podaj ilość sekundantów [min 1]: %d", &sekundanci);  
-    scanf("Podaj ilość sal szpitalnych [min (n/2)+1]:%d", &saleSzpitalne);  
+    int *bufer = (int *) malloc(size * sizeof(int));
+    list_t *rivals = (list_t *) malloc(size * sizeof(list_t));
     
     mainLoop();
     

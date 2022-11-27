@@ -6,108 +6,166 @@ void mainLoop()
     srandom(rank);
     int tag;
 
-    while (1) {
+    while (1)
+    {
         SearchForRival();
-		SearchForSecundant();
-        Fight();
-        if (stan == ToHeal) {HealMe();}
+        SearchForSecundant();
+        FightWithRival();
+        if (stan == ToHeal) HealYourSelf();
+        else debug("Wygrałem\n");
     }
 }
 
 void SearchForRival()
 {
+    debug("Szukam rywala\n");
+    changeStateFor(Rival);
     packet_t *pkt = malloc(sizeof(packet_t));
+    setPriority();
+    pkt->ts = priorytet;
+    pkt->data = Rival;
+    increaseAggrementSum(0);
+    setBufer(rank, priorytet);
 
-    //TODO lista min max i wybór rywala
+    changeState(InSend);
+    for (int i = 0; i < size; i++)
+    {
+        if(i == rank) continue;
+        sendPacket(pkt, i, REQ);
+    }
+    changeState(InMonitor);
 
+    while (stan != InFree)
+    {
+        if (aggrementSum == size)
+        {
+            changeState(InFree);
+            sortAndChooseRival();
+        }
+        sleep(SEC_IN_STATE);
+    }
+
+    debug("Będę walczył z %d\n", rival);
+
+
+    free(pkt);
 }
 
 void SearchForSecundant()
 {
+    debug("Szukam sekundanta\n");
+    changeStateFor(Sekundant);
     packet_t *pkt = malloc(sizeof(packet_t));
-    pkt->ts = lampClock;
-    pkt->data = SEKUNDANT;
-    aggrementSum = 0;
+    setPriority();
+    pkt->ts = priorytet;
+    pkt->data = Sekundant;
+    increaseAggrementSum(0);
 
-    changeState(InSecundantSend);
-    for(int i=0; i<size; i++)
+    changeState(InSend);
+    for (int i = 0; i < size; i++)
     {
-		sendPacket( pkt, i, REQ);
+        if(i == rank) continue;
+        sendPacket(pkt, i, REQ);
     }
-    changeState(InSecundantMonitor);
+    changeState(InMonitor);
 
-    while(stan!=InFree)
+    while (stan != InFree)
     {
-        if (aggrementSum>0) {changeState(InFree);}
+        if (sekundanci-(size-1-aggrementSum ) > 0)
+        {
+            changeState(InFree);
+        }
         sleep(SEC_IN_STATE);
     }
+    debug("Znalazłem sekundanta\n");
+    free(pkt);
 }
 
-void Fight() 
+void FightWithRival()
 {
+    debug("Walczę z %d\n", rival);
+    changeStateFor(Fight);
     srandom(rank);
     int shot = rand() % 1000 + 1;
     packet_t *pkt = malloc(sizeof(packet_t));
-    pkt->data = FIGHT;
+    setPriority();
+    pkt->ts = priorytet;
+    pkt->data = Fight;
     pkt->value = shot;
-    pkt->ts = lampClock;
+    increaseAggrementSum(0);
 
-    changeState(InFightSend);
-    sendPacket( pkt, rival, REQ);
-    changeState(InFightMonitor);
-    
-    while(stan!=InFree)
-    {
-        if (aggrementSum>0) {changeState(InFree);}
-        sleep(SEC_IN_STATE);
-    }
-    changeState(InFree);
+    changeState(InSend);
+    sendPacket(pkt, rival, REQ);
+    changeState(InMonitor);
 
-    for(int i=0; i<size; i++)
+    while (stan != InFree)
     {
-        pkt->data = SEKUNDANT;
-        sendPacket( pkt, i, FREE);
-    }
-    
-    
-    if (aggrementSum>shot) 
-    {
-        changeState(ToHeal);
-        println("Zostałem pokonany")
-    }
-    
-   
-}
-
-void HealMe()
-{
-    srandom(rank);
-    int nurseSpeed = rand() % 3 + 1;
-    packet_t *pkt = malloc(sizeof(packet_t));
-    pkt->data = HEAL;
-    pkt->ts = lampClock;
-    aggrementSum = 0;
-
-    changeState(InHealSend);
-    for(int i=0; i<size; i++)
-    {
-		sendPacket( pkt, i, REQ);
-    }
-    changeState(InHealMonitor);
-
-    while(stan!=InFree)
-    {
-        if (aggrementSum>0) {
-            changeState(InRun);
-            sleep(nurseSpeed);
+        if (aggrementSum > 0)
+        {
             changeState(InFree);
         }
         sleep(SEC_IN_STATE);
     }
 
-    for(int i=0; i<size; i++)
+    pkt->data = Sekundant;
+    for (int i = 0; i < size; i++)
     {
-        pkt->data = HEAL;
-		sendPacket( pkt, i, FREE);
+        if(bufer[i] == TRUE)
+        {
+            setBufer(i, FALSE);
+            sendPacket(pkt, i, FREE);
+        }
     }
+
+    if (aggrementSum > shot || (aggrementSum == shot && rank < rival))
+    {
+        changeState(ToHeal);
+        debug("Zostałem pokonany\n")
+    }
+    free(pkt);
+}
+
+void HealYourSelf()
+{
+    debug("Będę się leczył\n")
+    changeStateFor(Heal);
+    srandom(rank);
+    int nurseSpeed = rand() % 3 + 1;
+    packet_t *pkt = malloc(sizeof(packet_t));
+    setPriority();
+    pkt->ts = priorytet;
+    pkt->data = Heal;
+    increaseAggrementSum(0);
+
+    changeState(InSend);
+    for (int i = 0; i < size; i++)
+    {
+        if(i == rank) continue;
+        sendPacket(pkt, i, REQ);
+    }
+    changeState(InMonitor);
+
+    while (stan != InFree)
+    {
+        if (saleSzpitalne - (size - 1 - aggrementSum) > 0)
+        {
+            changeState(InRun);
+            debug("Leczę się\n");
+            sleep(nurseSpeed);
+            changeState(InFree);
+            debug("wyleczony\n");
+        }
+        sleep(SEC_IN_STATE);
+    }
+
+    pkt->data = Heal;
+    for (int i = 0; i < size; i++)
+    {
+        if(bufer[i] == TRUE)
+        {
+            setBufer(i, FALSE);
+            sendPacket(pkt, i, FREE);
+        }
+    }
+    free(pkt);
 }
