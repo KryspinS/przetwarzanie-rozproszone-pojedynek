@@ -13,6 +13,7 @@
 			- [*Plik util*](#plik-util)
 		- [***Pseudokod***](#pseudokod)
 		- [***Wygląd komunikatów***](#wygląd-komunikatów)
+		- [***Uruchamienie procesu***](#uruchamienie-procesu)
 	- [***Rozwiązanie dostępu do sekcji krytycznych***](#rozwiązanie-dostępu-do-sekcji-krytycznych)
 		- [***Rozwiązanie problemu parowania***](#rozwiązanie-problemu-parowania)
 		- [***Rozwiązanie problemu Sekundantów i sal szpitalnych***](#rozwiązanie-problemu-sekundantów-i-sal-szpitalnych)
@@ -142,6 +143,15 @@ Dodatkowo każdy komunikat zawiera jeden z poniższych tagów:
  * FREE (zwalnianie zasobu)
 <br><br><br>
 
+### ***Uruchamienie procesu***
+W celu uruchomienia procesu należy skorzystać z zaimplementowanego pliku makefile, który uruchomi procesy. Należy pamiętać o tym by wywołać go z parametrami Seku (Sekundanci) oraz Sale (Sale szpitalne) np.: 
+
+`make run Seku=4 Sale=2`.
+
+Przy uruchamianiu procesu do jego prawidłowej pracy należy zachować następujące warunki:
+ * ilość sal szpitalnych powinna być minimum równa 1
+ * ilość sekundantów powinna być minimum równa n/2+1 
+<br><br><br>
 
 ## ***Rozwiązanie dostępu do sekcji krytycznych***
 
